@@ -1,0 +1,6 @@
+pretrainedmodels
+numpy
+cython
+gensim
+torch
+torchvision
