@@ -4,3 +4,7 @@
 .idea/workspace.xml
 __pycache__/
 g/
+/data/embedded_images.pkl
+/data/captions_val2017.json
+/data/train/
+/data/annotations/
