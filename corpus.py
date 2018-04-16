@@ -21,7 +21,7 @@ class Corpus:
         self.fast_text = word_embeddings if word_embeddings is not None else {}
         self.vocab_size = len(self.word2idx)
         self.embed_size = 300
-        self.max_sentence_length = 16
+        self.max_sentence_length = 18
         self.min_word_freq = 5
 
     def word_embedding(self, word):
