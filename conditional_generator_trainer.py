@@ -1,5 +1,5 @@
 import os
-from os import cpu_count
+import time
 
 import torch
 from pretrainedmodels import utils
@@ -13,9 +13,9 @@ from coco_dataset import CocoDataset
 from conditional_generator import ConditionalGenerator
 from corpus import Corpus
 from file_path_manager import FilePathManager
+# torch.backends.cudnn.enabled = False
 from vgg16_extractor import Vgg16Extractor
 
-# torch.backends.cudnn.enabled = False
 if not os.path.exists(FilePathManager.resolve("models")):
     os.makedirs(FilePathManager.resolve("models"))
 extractor = Vgg16Extractor(use_gpu=True, transform=False)
@@ -23,32 +23,38 @@ tf_img = utils.TransformImage(extractor.cnn)
 corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
 print("Corpus loaded")
 
-batch_size = 2
+batch_size = 32
 dataset = CocoDataset(corpus, transform=tf_img)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=cpu_count())
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=1)
 
 generator = ConditionalGenerator(corpus).cuda()
-criterion = nn.CrossEntropyLoss().cuda()
+criterion = nn.CrossEntropyLoss(ignore_index=3).cuda()
 optimizer = Adam(generator.parameters(), lr=0.0001, weight_decay=1e-5)
 
 epochs = 20
 
+start = time.time()
 print("Begin Training")
-for epoch in range(epochs):
+for epoch in range(1, epochs):
     for i, (images, inputs, targets) in enumerate(dataloader, 0):
         print(f"Batch = {i + 1}")
         images = Variable(images).cuda()
-        inputs = pack_padded_sequence(inputs, 17, True).cuda()
-        targets = pack_padded_sequence(targets, 17, True).cuda()
+        images = extractor.forward(images)
+        for k in range(5):
+            input = Variable(inputs[k])[:, :-1, :].cuda()
+            target = Variable(targets[k])[:, 1:].cuda()
 
-        images = extractor(images)
+            input = pack_padded_sequence(input, [17] * len(images), True)
 
-        optimizer.zero_grad()
-        outputs = generator.forward(images, inputs)
+            optimizer.zero_grad()
+            outputs = generator.forward(images, input)
 
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
+            loss = criterion(outputs, target.contiguous().view(-1))
+            loss.backward()
+            optimizer.step()
+    end = time.time()
+    print(end - start)
+    start = end
 
-        torch.save({"state_dict": generator.state_dict()}, FilePathManager.resolve("models/generator.pth"))
-    print(f"Epoch = {epoch + 1}")
+    torch.save({"state_dict": generator.state_dict()}, FilePathManager.resolve("models/generator.pth"))
+print(f"Epoch = {epoch + 1}")
