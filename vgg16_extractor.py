@@ -1,6 +1,5 @@
 import pretrainedmodels
 from pretrainedmodels import utils
-from torch.autograd import Variable
 
 from file_path_manager import FilePathManager
 
@@ -32,7 +31,7 @@ class Vgg16Extractor:
         if self.use_gpu:
             image = image.cuda()
 
-        temp = self.cnn.features(Variable(image))
+        temp = self.cnn.features(image)
         return temp
 
     def __call__(self, image):
