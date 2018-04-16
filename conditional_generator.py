@@ -8,7 +8,6 @@ from torch.distributions import Normal
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from coco_dataset import CocoDataset
 from corpus import Corpus
 from file_path_manager import FilePathManager
 
@@ -47,7 +46,7 @@ class ConditionalGenerator(nn.Module):
     def init_hidden(self, image_features):
 
         # generate rand
-        rand = self.dist.sample_n(image_features.shape[0]).cuda()
+        rand = self.dist.sample_n(images.shape[0]).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)
         hidden = self.features_linear(torch.cat((image_features, rand), 1).unsqueeze(0))
@@ -59,7 +58,8 @@ class ConditionalGenerator(nn.Module):
     def forward(self, features, captions):
         states = self.init_hidden(features)
         hiddens, _ = self.lstm(captions, states)
-        outputs = self.output_linear(hiddens.squeeze(1))
+        #         outputs = self.output_linear(hiddens.squeeze(1))
+        outputs = self.output_linear(hiddens[0])
         return outputs
 
     # def forward(self, image_features, logits=True):
