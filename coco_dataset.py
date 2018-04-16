@@ -22,8 +22,8 @@ class CocoDataset(Dataset):
 
     def __getitem__(self, index):
         image, caption = self.captions[index]
-        inputs = self.corpus.embed_sentence(caption[0], one_hot=False)[:-1]
-        targets = self.corpus.sentence_indices(caption)[1:]
+        inputs = [self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(5)]
+        targets = [self.corpus.sentence_indices(caption[i]) for i in range(5)]
         return image, inputs, targets
 
     def __len__(self):
