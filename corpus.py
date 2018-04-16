@@ -129,7 +129,7 @@ class Corpus:
         sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
         tokens = self.tokenize(sentence)
         tokens = self.pad_sentence(tokens)
-        return torch.LongTensor([corpus.word_index(token) for token in tokens])
+        return torch.LongTensor([self.word_index(token) for token in tokens])
 
 
 if __name__ == '__main__':
@@ -140,3 +140,4 @@ if __name__ == '__main__':
     print(corpus.word_one_hot("<unk>"))
     print(corpus.word_embedding("<unk>"))
     print(corpus.vocab_size)
+    print(corpus.sentence_indices("A B"))
