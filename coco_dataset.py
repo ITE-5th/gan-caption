@@ -23,7 +23,7 @@ class CocoDataset(Dataset):
     def __getitem__(self, index):
         image, caption = self.captions[index]
         inputs = self.corpus.embed_sentence(caption[0], one_hot=False)[:-1]
-        targets = self.corpus.embed_sentence(caption[0], one_hot=True)[1:]
+        targets = self.corpus.word2idx()[1:]
         return image, inputs, targets
 
     def __len__(self):

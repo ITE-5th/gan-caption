@@ -5,6 +5,7 @@ import torch
 from pretrainedmodels import utils
 from torch import nn
 from torch.autograd import Variable
+from torch.nn.utils.rnn import pack_padded_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
@@ -36,7 +37,9 @@ print("Begin Training")
 for epoch in range(epochs):
     for i, (images, inputs, targets) in enumerate(dataloader, 0):
         print(f"Batch = {i + 1}")
-        images, inputs, targets = Variable(images).cuda(), Variable(inputs).cuda(), Variable(targets).cuda()
+        images = Variable(images).cuda()
+        inputs = pack_padded_sequence(inputs, 17, True).cuda()
+        targets = pack_padded_sequence(targets, 17, True).cuda()
 
         images = extractor(images)
 

@@ -39,7 +39,7 @@ class Corpus:
         if isinstance(word, str):
             word = self.word_index(word)
         result[word] = 1
-        return result
+        return result.long()
 
     def word_index(self, word):
         return self.word2idx[word]
@@ -124,6 +124,12 @@ class Corpus:
         with open(file_path, "rb") as f:
             word2idx, idx2word, fast_text = pickle.load(f)
         return Corpus(word2idx, idx2word, fast_text)
+
+    def sentence_indices(self, sentence, ):
+        sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
+        tokens = self.tokenize(sentence)
+        tokens = self.pad_sentence(tokens)
+        return torch.LongTensor([corpus.word_index(token) for token in tokens])
 
 
 if __name__ == '__main__':
