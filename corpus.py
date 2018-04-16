@@ -125,12 +125,13 @@ class Corpus:
             word2idx, idx2word, fast_text = pickle.load(f)
         return Corpus(word2idx, idx2word, fast_text)
 
-    def sentence_indices(self, sentence, ):
+    def sentence_indices(self, sentence):
         sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
         tokens = self.tokenize(sentence)
+
+        tokens = [self.UNK if token not in self.word2idx and token not in self.idx2word else token for token in tokens]
         tokens = self.pad_sentence(tokens)
         return torch.LongTensor([self.word_index(token) for token in tokens])
-
 
 if __name__ == '__main__':
     # corpus = Corpus()
@@ -140,4 +141,5 @@ if __name__ == '__main__':
     print(corpus.word_one_hot("<unk>"))
     print(corpus.word_embedding("<unk>"))
     print(corpus.vocab_size)
-    print(corpus.sentence_indices("A B"))
+    # print(corpus.sentence_indices("<unk>"))
+    print(corpus.sentence_indices("5955452495121"))
