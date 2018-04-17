@@ -8,6 +8,7 @@ from torch.distributions import Normal
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
+from coco_dataset import CocoDataset
 from corpus import Corpus
 from file_path_manager import FilePathManager
 
