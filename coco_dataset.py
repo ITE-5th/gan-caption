@@ -1,4 +1,5 @@
 import pickle
+import torch
 
 import torchvision.datasets as dset
 from joblib import cpu_count
@@ -22,8 +23,8 @@ class CocoDataset(Dataset):
 
     def __getitem__(self, index):
         image, caption = self.captions[index]
-        inputs = [self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(5)]
-        targets = [self.corpus.sentence_indices(caption[i]) for i in range(5)]
+        inputs = torch.stack([self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(len(caption))])
+        targets = torch.stack([self.corpus.sentence_indices(caption[i]) for i in range(len(caption))])
         return image, inputs, targets
 
     def __len__(self):

@@ -32,6 +32,20 @@ class Corpus:
         result = torch.from_numpy(self.fast_text[word]).view(-1)
         return result
 
+    def word_embeddings(self, words):
+        temp = len(words)
+        result = torch.zeros(temp, self.embed_size)
+        for i in range(temp):
+            result[i] = self.word_embedding(words[i])
+        return result
+
+    def word_embedding_from_index(self, index):
+        return self.word_embedding(self.word_from_index(index))
+
+    def word_embeddings_from_indices(self, indices):
+        words = [self.word_from_index(i) for i in indices]
+        return self.word_embeddings(words)
+
     def word_one_hot(self, word):
         if word not in self.word2idx and word not in self.idx2word:
             word = self.UNK
@@ -42,6 +56,8 @@ class Corpus:
         return result.long()
 
     def word_index(self, word):
+        if word not in self.word2idx and word not in self.idx2word:
+            word = self.UNK
         return self.word2idx[word]
 
     def word_from_index(self, index):
@@ -112,6 +128,12 @@ class Corpus:
             result[i] = self.word_one_hot(tokens[i]) if one_hot else self.word_embedding(tokens[i])
         return result
 
+    def sentence_indices(self, sentence):
+        sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
+        tokens = self.tokenize(sentence)
+        tokens = self.pad_sentence(tokens)
+        return torch.LongTensor([self.word_index(token) for token in tokens])
+
     def __call__(self, sentence, one_hot: bool = False):
         return self.embed_sentence(sentence, one_hot)
 
@@ -125,13 +147,6 @@ class Corpus:
             word2idx, idx2word, fast_text = pickle.load(f)
         return Corpus(word2idx, idx2word, fast_text)
 
-    def sentence_indices(self, sentence):
-        sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
-        tokens = self.tokenize(sentence)
-
-        tokens = [self.UNK if token not in self.word2idx and token not in self.idx2word else token for token in tokens]
-        tokens = self.pad_sentence(tokens)
-        return torch.LongTensor([self.word_index(token) for token in tokens])
 
 if __name__ == '__main__':
     # corpus = Corpus()
@@ -141,5 +156,3 @@ if __name__ == '__main__':
     print(corpus.word_one_hot("<unk>"))
     print(corpus.word_embedding("<unk>"))
     print(corpus.vocab_size)
-    # print(corpus.sentence_indices("<unk>"))
-    print(corpus.sentence_indices("5955452495121"))

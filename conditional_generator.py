@@ -45,9 +45,8 @@ class ConditionalGenerator(nn.Module):
         )
 
     def init_hidden(self, image_features):
-
         # generate rand
-        rand = self.dist.sample_n(images.shape[0]).cuda()
+        rand = self.dist.sample_n(image_features.shape[0]).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)
         hidden = self.features_linear(torch.cat((image_features, rand), 1).unsqueeze(0))
@@ -63,46 +62,28 @@ class ConditionalGenerator(nn.Module):
         outputs = self.output_linear(hiddens[0])
         return outputs
 
-    # def forward(self, image_features, logits=True):
-    #     assert (image_features.shape[1] == self.cnn_output_size)
-    #
-    #     return self.sample2(image_features, logits)
+    def sample(self, image_features):
+        batch_size = image_features.size(0)
 
-    def sample(self, image_features, return_logits):
-        sampled_indices = []
-        logits = []
+        # init the result with zeros and lstm states
+        result = torch.zeros(batch_size, self.max_sentence_length).cuda()
         hidden = self.init_hidden(image_features)
-        inputs = self.embed.word_embedding(self.embed.START_SYMBOL)
-        done = False
-        while not done:
-            outputs, hidden = self.lstm(inputs, hidden)
-            outputs = self.output_linear(outputs.squeeze(1))
-            logits.append(outputs)
-            predicted = outputs.max(1)[1]
-            sampled_indices.append(predicted)
-            inputs = self.embed.word_embedding(predicted)
-            done = predicted == self.embed.word_index(self.dict.END_SYMBOL)
-        sampled_indices = torch.cat(sampled_indices, 0)
-        logits = torch.cat(logits, 0)
-        return sampled_indices.squeeze() if not return_logits else logits.squeeze()
 
-    def sample2(self, image_features, return_logits):
-        sampled_indices = []
-        logits = []
-        states = self.init_hidden(image_features)
-        inputs = self.embed(self.embed.START_SYMBOL)
-        for _ in range(self.max_sentence_length):
-            hiddens, states = self.lstm(inputs, states)
-            outputs = self.output_linear(hiddens.squeeze(1))
-            logits.append(outputs)
-            predicted = outputs.max(1)[1]
-            sampled_indices.append(predicted)
-            inputs = self.embed(predicted)
-            inputs = inputs.unsqueeze(1)
+        # embed the start symbol
+        inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
 
-        sampled_indices = torch.cat(sampled_indices, 0)
-        logits = torch.cat(logits, 0)
-        return sampled_indices.squeeze() if not return_logits else logits.squeeze()
+        for i in range(self.max_sentence_length):
+            _, hidden = self.lstm(inputs, hidden)
+            outputs = self.output_linear(hidden[0]).squeeze(0)
+            predicted = outputs.max(-1)[1]
+
+            # embed the next inputs, unsqueeze is required 'cause of shape (batch_size, 1, embedding_size)
+            inputs = self.embed.word_embeddings_from_indices(predicted.cpu().data.numpy()).unsqueeze(1).cuda()
+
+            # store the result
+            result[:, i] = predicted
+
+        return result
 
 
 if __name__ == '__main__':
