@@ -147,6 +147,12 @@ class Corpus:
             word2idx, idx2word, fast_text = pickle.load(f)
         return Corpus(word2idx, idx2word, fast_text)
 
+    def words_from_indices(self, indices):
+        words = []
+        for i in range(indices.shape[0]):
+            words.append(self.word_from_index(indices[i]))
+        return words
+
 
 if __name__ == '__main__':
     # corpus = Corpus()

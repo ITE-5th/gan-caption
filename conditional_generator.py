@@ -46,7 +46,7 @@ class ConditionalGenerator(nn.Module):
 
     def init_hidden(self, image_features):
         # generate rand
-        rand = self.dist.sample_n(image_features.shape[0]).cuda()
+        rand = self.dist.sample((image_features.shape[0],)).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)
         hidden = self.features_linear(torch.cat((image_features, rand), 1).unsqueeze(0))
@@ -84,6 +84,45 @@ class ConditionalGenerator(nn.Module):
             result[:, i] = predicted
 
         return result
+
+    def sample_with_embedding(self, images_features):
+        batch_size = images_features.size(0)
+
+        # init the result with zeros and lstm states
+        result = torch.zeros(batch_size, self.max_sentence_length, self.embed.embed_size).cuda()
+        hidden = self.init_hidden(images_features)
+
+        # embed the start symbol
+        inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
+
+        for i in range(self.max_sentence_length):
+            # store the result
+            result[:, i] = inputs.squeeze(1)
+            inputs = Variable(inputs)
+            _, hidden = self.lstm(inputs, hidden)
+            outputs = self.output_linear(hidden[0]).squeeze(0)
+            predicted = outputs.max(-1)[1]
+
+            # embed the next inputs, unsqueeze is required 'cause of shape (batch_size, 1, embedding_size)
+            inputs = self.embed.word_embeddings_from_indices(predicted.cpu().data.numpy()).unsqueeze(1).cuda()
+
+        return Variable(result)
+
+    def save(self):
+        torch.save({"state_dict": self.state_dict()}, FilePathManager.resolve("models/generator.pth"))
+
+    @staticmethod
+    def load(corpus: Corpus, training: bool = False):
+        state_dict = torch.load(FilePathManager.resolve("models/generator.pth"))
+        state_dict = state_dict["state_dict"]
+        generator = ConditionalGenerator(corpus)
+        generator.load_state_dict(state_dict)
+        generator.eval()
+        if not training:
+            for param in generator.parameters():
+                param.requires_grad = False
+
+        return generator
 
 
 if __name__ == '__main__':

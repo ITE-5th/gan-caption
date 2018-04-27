@@ -25,10 +25,10 @@ print("Corpus loaded")
 
 batch_size = 32
 dataset = CocoDataset(corpus, transform=tf_img)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=1)
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 generator = ConditionalGenerator(corpus).cuda()
-criterion = nn.CrossEntropyLoss(ignore_index=corpus.word_index(corpus.PAD), size_average=False).cuda()
+criterion = nn.CrossEntropyLoss(ignore_index=corpus.word_index(corpus.PAD), size_average=True).cuda()
 optimizer = Adam(generator.parameters(), lr=1e-4, weight_decay=1e-5)
 pretrained = False
 if pretrained:
@@ -38,8 +38,8 @@ if pretrained:
     optimizer.load_state_dict(st['optimizer'])
 generator.train(True)
 
-epochs = 20
-
+epochs = 100
+print(f"number of batches = {len(dataset) // batch_size}")
 start = time.time()
 print("Begin Training")
 for epoch in range(1, epochs):
@@ -52,16 +52,18 @@ for epoch in range(1, epochs):
             target = Variable(targets[:, k, 1:]).cuda()
 
             input = pack_padded_sequence(input, [17] * input.shape[0], True)
+            target = pack_padded_sequence(target, [17] * target.shape[0], True)[0]
 
             optimizer.zero_grad()
             outputs = generator.forward(images, input)
 
-            loss = criterion(outputs, target.contiguous().view(-1))
+            loss = criterion(outputs, target)
             loss.backward()
             optimizer.step()
     end = time.time()
     print(end - start)
     start = end
 
-torch.save({"state_dict": generator.state_dict(), 'optimizer': optimizer.state_dict()}, FilePathManager.resolve("models/generator.pth"))
+    torch.save({"state_dict": generator.state_dict(), 'optimizer': optimizer.state_dict()},
+               FilePathManager.resolve("models/generator.pth"))
 print(f"Epoch = {epoch + 1}")
