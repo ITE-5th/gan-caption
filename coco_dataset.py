@@ -23,6 +23,7 @@ class CocoDataset(Dataset):
 
     def __getitem__(self, index):
         image, caption = self.captions[index]
+        # self.captions.coco.anns[]
         inputs = torch.stack([self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(len(caption))])
         targets = torch.stack([self.corpus.sentence_indices(caption[i]) for i in range(len(caption))])
         return image, inputs, targets
