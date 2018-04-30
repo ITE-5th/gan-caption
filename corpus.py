@@ -15,13 +15,13 @@ class Corpus:
     UNK = "<unk>"
     PAD = "<pad>"
 
-    def __init__(self, word2idx=None, idx2word=None, word_embeddings=None):
+    def __init__(self, word2idx=None, idx2word=None, word_embeddings=None, max_sentence_length=16):
         self.word2idx = word2idx if word2idx is not None else {}
         self.idx2word = idx2word if idx2word is not None else {}
         self.fast_text = word_embeddings if word_embeddings is not None else {}
         self.vocab_size = len(self.word2idx)
         self.embed_size = 300
-        self.max_sentence_length = 18
+        self.max_sentence_length = max_sentence_length
         self.min_word_freq = 5
 
     def word_embedding(self, word):
