@@ -10,7 +10,7 @@ from file_path_manager import FilePathManager
 
 class ECocoDataset(Dataset):
 
-    def __init__(self, corpus: Corpus, evaluator: bool = True, tranform=None, captions_per_image=5):
+    def __init__(self, corpus: Corpus, evaluator: bool = True, tranform=None, captions_per_image=2):
         self.corpus = corpus
         self.evaluator = evaluator
         self.captions = dset.CocoCaptions(root=FilePathManager.resolve(f'data/train'),
@@ -34,7 +34,8 @@ class ECocoDataset(Dataset):
             other_index = random.choice(s)
             other_caption = self.get_captions(other_index)
             other_index = random.choice(range(self.captions_per_image))
-            other_caption = other_caption[1][other_index]
+            other_caption = other_caption[other_index]
+            print(other_caption)
             other_caption = self.corpus.embed_sentence(other_caption, one_hot=False)
             others.append(other_caption)
 
