@@ -1,6 +1,6 @@
 import pickle
-import torch
 
+import torch
 import torchvision.datasets as dset
 from joblib import cpu_count
 from pretrainedmodels import utils
@@ -14,18 +14,19 @@ from vgg16_extractor import Vgg16Extractor
 
 class GCocoDataset(Dataset):
 
-    def __init__(self, corpus: Corpus, transform=None):
+    def __init__(self, corpus: Corpus, transform=None, captions_per_image=2):
         self.corpus = corpus
         self.captions = dset.CocoCaptions(root=FilePathManager.resolve(f'data/train'),
                                           annFile=FilePathManager.resolve(
                                               f"data/annotations/captions_train2017.json"),
                                           transform=transform)
+        self.captions_per_image = captions_per_image
 
     def __getitem__(self, index):
         image, caption = self.captions[index]
-        # self.captions.coco.anns[]
-        inputs = torch.stack([self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(len(caption))])
-        targets = torch.stack([self.corpus.sentence_indices(caption[i]) for i in range(len(caption))])
+        inputs = torch.stack(
+            [self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(self.captions_per_image)])
+        targets = torch.stack([self.corpus.sentence_indices(caption[i]) for i in range(self.captions_per_image)])
         return image, inputs, targets
 
     def __len__(self):
