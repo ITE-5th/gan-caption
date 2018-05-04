@@ -62,17 +62,19 @@ class ConditionalGenerator(nn.Module):
         outputs = self.output_linear(hiddens[0])
         return outputs
 
-    def sample(self, image_features):
+    def sample(self, image_features, return_sentence=True):
         batch_size = image_features.size(0)
 
         # init the result with zeros and lstm states
-        result = torch.zeros(batch_size, self.max_sentence_length).cuda()
+        result = []
         hidden = self.init_hidden(image_features)
 
         # embed the start symbol
+        # inputs = self.embed.word_embeddings(["car"] * batch_size).unsqueeze(1).cuda()
         inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
 
         for i in range(self.max_sentence_length):
+            inputs = Variable(inputs)
             _, hidden = self.lstm(inputs, hidden)
             outputs = self.output_linear(hidden[0]).squeeze(0)
             predicted = outputs.max(-1)[1]
@@ -81,7 +83,11 @@ class ConditionalGenerator(nn.Module):
             inputs = self.embed.word_embeddings_from_indices(predicted.cpu().data.numpy()).unsqueeze(1).cuda()
 
             # store the result
-            result[:, i] = predicted
+            result.append(self.embed.word_from_index(predicted.cpu().numpy()[0]))
+
+        if return_sentence:
+            # result = " ".join(result)#.join(list(filter(lambda x: x != self.embed.END_SYMBOL, result)))
+            result = " ".join(list(filter(lambda x: x != self.embed.END_SYMBOL, result)))
 
         return result
 

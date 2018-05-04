@@ -23,6 +23,7 @@ class ECocoDataset(Dataset):
 
     def __getitem__(self, index):
         image, caption = self.captions[index]
+        # print(f"real: {caption}")
         captions = torch.stack(
             [self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(self.captions_per_image)])
         others = []
@@ -35,7 +36,7 @@ class ECocoDataset(Dataset):
             other_caption = self.get_captions(other_index)
             other_index = random.choice(range(self.captions_per_image))
             other_caption = other_caption[other_index]
-            print(other_caption)
+            # print(f"other: {other_caption}")
             other_caption = self.corpus.embed_sentence(other_caption, one_hot=False)
             others.append(other_caption)
 
