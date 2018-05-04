@@ -9,7 +9,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from coco_dataset import CocoDataset
+from g_coco_dataset import GCocoDataset
 from conditional_generator import ConditionalGenerator
 from corpus import Corpus
 from file_path_manager import FilePathManager
@@ -24,7 +24,7 @@ corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
 print("Corpus loaded")
 
 batch_size = 32
-dataset = CocoDataset(corpus, transform=tf_img)
+dataset = GCocoDataset(corpus, transform=tf_img)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 generator = ConditionalGenerator(corpus).cuda()

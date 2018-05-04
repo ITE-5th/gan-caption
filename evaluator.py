@@ -46,3 +46,11 @@ class Evaluator(nn.Module):
         evaluator = Evaluator(corpus)
         evaluator.load_state_dict(state_dict)
         return evaluator
+
+    def freeze(self):
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def unfreeze(self):
+        for param in self.parameters():
+            param.requires_grad = True
