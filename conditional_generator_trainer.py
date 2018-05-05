@@ -65,7 +65,7 @@ for epoch in range(epochs):
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
-        epoch_loss = loss.item()
+        epoch_loss += loss.item()
 
     end = time.time()
     print(f"Epoch: {epoch}, Time: {end - start}, Loss: {epoch_loss}")

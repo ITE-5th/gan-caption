@@ -13,7 +13,7 @@ class Corpus:
     START_SYMBOL = "<start>"
     END_SYMBOL = "<end>"
     UNK = "<unk>"
-    PAD = "<end>"
+    PAD = "<pad>"
 
     def __init__(self, word2idx=None, idx2word=None, word_embeddings=None, max_sentence_length=16):
         self.word2idx = word2idx if word2idx is not None else {}
