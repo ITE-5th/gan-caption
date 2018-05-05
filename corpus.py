@@ -109,7 +109,7 @@ class Corpus:
         temp = self.preprocess_sentence(sentence).split(" ")
         return [self.remove_nonalpha(x)
                 for x in temp
-                if not x.isspace()]
+                if not x.isspace() and len(x) > 0]
 
     def pad_sentence(self, tokens):
         tokens = tokens[:self.max_sentence_length]
@@ -121,6 +121,7 @@ class Corpus:
     def embed_sentence(self, sentence: str, one_hot=False, pad: bool = True):
         sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
         tokens = self.tokenize(sentence)
+        print(f"len: {len(tokens)}, tokens: {tokens}")
         if pad:
             tokens = self.pad_sentence(tokens)
         result = torch.zeros(self.max_sentence_length, self.vocab_size if one_hot else self.embed_size)

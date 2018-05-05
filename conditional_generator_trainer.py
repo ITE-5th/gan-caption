@@ -25,7 +25,7 @@ print("Corpus loaded")
 captions_per_image = 2
 max_length = 16
 batch_size = 32
-dataset = GCocoDataset(corpus, transform=tf_img)
+dataset = GCocoDataset(corpus, transform=tf_img, captions_per_image=captions_per_image)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 generator = ConditionalGenerator(corpus).cuda()
