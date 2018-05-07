@@ -29,6 +29,7 @@ class Corpus:
             word = self.UNK
         if isinstance(word, int):
             word = self.word_from_index(word)
+        #         print(f"word: {word}, len: {len(word)}")
         result = torch.from_numpy(self.fast_text[word]).view(-1)
         return result
 
@@ -107,9 +108,11 @@ class Corpus:
 
     def tokenize(self, sentence: str):
         temp = self.preprocess_sentence(sentence).split(" ")
-        return [self.remove_nonalpha(x)
+        temp = [self.remove_nonalpha(x)
                 for x in temp
-                if not x.isspace() and len(x) > 0]
+                if not x.isspace()]
+        #         print(f"{[len(x) for x in temp if len(x) > 0]}")
+        return [x for x in temp if len(x) > 0]
 
     def pad_sentence(self, tokens):
         tokens = tokens[:self.max_sentence_length]
@@ -121,7 +124,6 @@ class Corpus:
     def embed_sentence(self, sentence: str, one_hot=False, pad: bool = True):
         sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
         tokens = self.tokenize(sentence)
-        print(f"len: {len(tokens)}, tokens: {tokens}")
         if pad:
             tokens = self.pad_sentence(tokens)
         result = torch.zeros(self.max_sentence_length, self.vocab_size if one_hot else self.embed_size)
@@ -143,23 +145,13 @@ class Corpus:
             pickle.dump((self.word2idx, self.idx2word, self.fast_text), f)
 
     @staticmethod
-    def load(file_path):
+    def load(file_path, max_sentence_length=17):
         with open(file_path, "rb") as f:
             word2idx, idx2word, fast_text = pickle.load(f)
-        return Corpus(word2idx, idx2word, fast_text)
+        return Corpus(word2idx, idx2word, fast_text, max_sentence_length=17)
 
     def words_from_indices(self, indices):
         words = []
         for i in range(indices.shape[0]):
             words.append(self.word_from_index(indices[i]))
         return words
-
-
-if __name__ == '__main__':
-    # corpus = Corpus()
-    # corpus.prepare()
-    # corpus.store(FilePathManager.resolve("data/corpus.pkl"))
-    corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
-    print(corpus.word_one_hot("<unk>"))
-    print(corpus.word_embedding("<unk>"))
-    print(corpus.vocab_size)
