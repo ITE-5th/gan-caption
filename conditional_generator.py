@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Normal
 
+from beam_search import BeamSearch
 from corpus import Corpus
 from file_path_manager import FilePathManager
 from rollout import Rollout
@@ -106,7 +107,7 @@ class ConditionalGenerator(nn.Module):
             result.append(self.embed.word_from_index(predicted.cpu().numpy()[0]))
 
         if return_sentence:
-            result = " ".join(list(filter(lambda x: x != self.embed.END_SYMBOL, result)))
+            result = " ".join(result)#.split(self.embed.END_SYMBOL)[0]
 
         return result
 
@@ -152,6 +153,32 @@ class ConditionalGenerator(nn.Module):
             inputs = self.embed.word_embeddings_from_indices(predicted.cpu().data.numpy()).unsqueeze(1).cuda()
 
         return Variable(result)
+
+    def beam_sample(self, image_features, beam_size=5):
+        # self.beam_size = 5
+        batch_size = image_features.size(0)
+        beam_searcher = BeamSearch(beam_size, 1, 17)
+
+        # init the result with zeros and lstm states
+        states = self.init_hidden(image_features)
+        states = (states[0].repeat(1, beam_size, 1).cuda(), states[1].repeat(1, beam_size, 1).cuda())
+
+        # embed the start symbol
+        words_feed = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size) \
+            .repeat(beam_size, 1).unsqueeze(1).cuda()
+
+        for i in range(self.max_sentence_length):
+            hidden, states = self.lstm(words_feed, states)
+            outputs = self.output_linear(hidden.squeeze(1))
+            beam_indices, words_indices = beam_searcher.expand_beam(outputs=outputs)
+
+            if len(beam_indices) == 0 or i == 15:
+                generated_captions = beam_searcher.get_results()[:, 0]
+                outcaps = self.embed.words_from_indices(generated_captions.cpu().numpy())
+            else:
+                words_feed = torch.stack([self.embed.word_embeddings_from_indices(words_indices)]).view(
+                    beam_size, 1, -1).cuda()
+        return " ".join(outcaps)#.split(self.embed.END_SYMBOL)[0]
 
     def freeze(self):
         for param in self.parameters():
