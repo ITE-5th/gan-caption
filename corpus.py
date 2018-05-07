@@ -148,7 +148,7 @@ class Corpus:
     def load(file_path, max_sentence_length=17):
         with open(file_path, "rb") as f:
             word2idx, idx2word, fast_text = pickle.load(f)
-        return Corpus(word2idx, idx2word, fast_text, max_sentence_length=17)
+        return Corpus(word2idx, idx2word, fast_text, max_sentence_length=max_sentence_length)
 
     def words_from_indices(self, indices):
         words = []
