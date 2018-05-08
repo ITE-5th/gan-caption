@@ -18,18 +18,18 @@ from rl_loss import RLLoss
 from vgg16_extractor import Vgg16Extractor
 
 if __name__ == '__main__':
-    lr1 = 4e-4
-    lr2 = 4e-4
+    e_lr = 1e-5
+    g_lr = 1e-5
     alpha = 1
     beta = 1
     captions_per_image = 2
-    max_length = 16
+    max_length = 17
 
-    epochs = 25
+    epochs = 10
     batch_size = 128
     monte_carlo_count = 16
     extractor = Vgg16Extractor(transform=False)
-    corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
+    corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
     evaluator = Evaluator.load(corpus).cuda()
     generator = ConditionalGenerator.load(corpus).cuda()
 
@@ -39,8 +39,9 @@ if __name__ == '__main__':
     generator_criterion = RLLoss().cuda()
     generator.unfreeze()
     evaluator.unfreeze()
-    evaluator_optimizer = optim.Adam(evaluator.parameters(), lr=lr1, weight_decay=1e-5)
-    generator_optimizer = optim.Adam(generator.parameters(), lr=lr2, weight_decay=1e-5)
+    evaluator_optimizer = optim.Adam(evaluator.parameters(), lr=e_lr, weight_decay=1e-5)
+    generator_optimizer = optim.Adam(generator.parameters(), lr=g_lr, weight_decay=1e-5)
+
     print(f"number of batches = {len(dataset) // batch_size}")
     print("Begin Training")
     for epoch in range(epochs):
@@ -86,8 +87,10 @@ if __name__ == '__main__':
             print(f"Batch Time {end - start}")
             start = end
         print(f"Epoch: {epoch + 1}, Loss: {generator_loss + evaluator_loss}, G: {generator_loss}, E:{evaluator_loss}")
-        # generator.save()
-        # evaluator.save()
+        if generator_loss < -50:
+            generator.save()
+    generator.save()
+    evaluator.save()
 
-generator.save()
-evaluator.save()
+# generator.save()
+# evaluator.save()

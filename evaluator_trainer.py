@@ -37,8 +37,9 @@ if __name__ == '__main__':
     alpha = 1
     beta = 1
     captions_per_image = 2
+    max_length = 17
 
-    corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
+    corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_sentence_length=max_length)
     evaluator = Evaluator(corpus).cuda()
     dataset = ECocoDataset(corpus, tranform=utils.TransformImage(extractor.cnn), captions_per_image=captions_per_image)
     criterion = EvaluatorLoss(alpha, beta).cuda()
@@ -50,7 +51,6 @@ if __name__ == '__main__':
     print(f"number of batches = {len(dataset) // batch_size}")
 
     all_losses = []
-    max_length = 16
     generator = ConditionalGenerator(corpus).cuda()
     state_dict = torch.load('./models/generator.pth')
     generator.load_state_dict(state_dict['state_dict'])
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     for param in generator.parameters():
         param.requires_grad = False
     generator.eval()
-    #
+
     # state_dict = torch.load('./models/evaluator.pth')
     # optimizer.load_state_dict(state_dict['optimizer'])
     # evaluator.load_state_dict(state_dict['state_dict'])

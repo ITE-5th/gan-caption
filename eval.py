@@ -22,8 +22,9 @@ def round_list(l, f=6):
 
 extractor = Vgg16Extractor(transform=False)
 
+max_length = 17
 captions_per_image = 2
-corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
+corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
 evaluator = Evaluator(corpus).cuda()
 dataset = ECocoDataset(corpus, tranform=utils.TransformImage(extractor.cnn), captions_per_image=captions_per_image)
 generator = ConditionalGenerator(corpus).cuda()
@@ -31,11 +32,12 @@ state_dict = torch.load('./models/generator.pth')
 generator.load_state_dict(state_dict['state_dict'])
 generator.eval()
 
-model1 = "./models/evaluator-c4.pth"
-model2 = "./models/evaluator-old2.pth"
-model3 = "./models/evaluator-c49.pth"
-model4 = "./models/evaluator-c99.pth"
-models = [model1, model2, model3, model4]
+model1 = "./models/evaluator.pth"
+# model2 = "./models/evaluator-old2.pth"
+# model3 = "./models/evaluator-c49.pth"
+# model4 = "./models/evaluator-c99.pth"
+# models = [model1, model2, model3, model4]
+models = [model1]
 batch_size = 1
 
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=1)
@@ -48,14 +50,14 @@ for model in models:
     for i, (images, captions, other_captions) in enumerate(dataloader):
         images, captions, other_captions = images.cuda(), captions.cuda(), other_captions.cuda()
         images = extractor.forward(images)
-        captions = captions.view(-1, 16, captions.shape[-1])
-        other_captions = other_captions.view(-1, 16, other_captions.shape[-1])
+        captions = captions.view(-1, max_length, captions.shape[-1])
+        other_captions = other_captions.view(-1, max_length, other_captions.shape[-1])
 
         k = images.shape[0]
-        images = torch.stack([images] * captions_per_image).permute(1, 0, 2).contiguous().view(-1, images.shape[-1])
+        images = torch.stack([images] * captions_per_image * k).permute(1, 0, 2).contiguous().view(-1, images.shape[-1])
 
-        captions = pack_padded_sequence(captions, [16] * k * captions_per_image, True)
-        other_captions = pack_padded_sequence(other_captions, [16] * k * captions_per_image, True)
+        captions = pack_padded_sequence(captions, [max_length] * k * captions_per_image, True)
+        other_captions = pack_padded_sequence(other_captions, [max_length] * k * captions_per_image, True)
 
         # generator_outputs = generator.sample(images)
         generator_outputs = generator.sample_with_embedding(images)
