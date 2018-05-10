@@ -192,9 +192,9 @@ class ConditionalGenerator(nn.Module):
         torch.save({"state_dict": self.state_dict()}, FilePathManager.resolve("models/generator.pth"))
 
     @staticmethod
-    def load(corpus: Corpus):
+    def load(corpus: Corpus, max_sentence_length=17):
         state_dict = torch.load(FilePathManager.resolve("models/generator.pth"))
         state_dict = state_dict["state_dict"]
-        generator = ConditionalGenerator(corpus)
+        generator = ConditionalGenerator(corpus, max_sentence_length=max_sentence_length)
         generator.load_state_dict(state_dict)
         return generator
