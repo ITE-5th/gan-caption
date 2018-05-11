@@ -59,7 +59,7 @@ class ConditionalGenerator(nn.Module):
         outputs = self.output_linear(hiddens[0])
         return outputs
 
-    def reward_forward(self, image_features, evaluator, monte_carlo_count=16):
+    def reward_forward(self, image_features, evaluator, monte_carlo_count=16, steps=1):
         self.lstm.flatten_parameters()
         batch_size = image_features.size(0)
         hidden = self.init_hidden(image_features)
@@ -79,7 +79,7 @@ class ConditionalGenerator(nn.Module):
             # embed the next inputs, unsqueeze is required cause of shape (batch_size, 1, embedding_size)
             inputs = self.embed.word_embeddings_from_indices(predicted.view(-1).cpu().data.numpy()).unsqueeze(1).cuda()
             current_generated = torch.cat([current_generated, inputs], dim=1)
-            reward = self.rollout.reward(current_generated, image_features, hidden, monte_carlo_count, evaluator)
+            reward = self.rollout.reward(current_generated, image_features, hidden, monte_carlo_count, evaluator, steps)
             rewards[:, i] = reward.view(-1)
         return rewards, props
 

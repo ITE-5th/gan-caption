@@ -27,7 +27,7 @@ captions_per_image = 2
 corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
 evaluator = Evaluator(corpus).cuda()
 dataset = ECocoDataset(corpus, tranform=utils.TransformImage(extractor.cnn), captions_per_image=captions_per_image)
-generator = ConditionalGenerator(corpus).cuda()
+generator = ConditionalGenerator(corpus, max_sentence_length=max_length).cuda()
 state_dict = torch.load('./models/generator.pth')
 generator.load_state_dict(state_dict['state_dict'])
 generator.eval()

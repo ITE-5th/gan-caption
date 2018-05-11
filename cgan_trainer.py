@@ -1,6 +1,7 @@
 import time
 from multiprocessing import cpu_count
 
+import numpy as np
 import torch
 from pretrainedmodels import utils
 from torch import optim
@@ -25,13 +26,15 @@ if __name__ == '__main__':
     captions_per_image = 2
     max_length = 17
 
-    epochs = 10
+    torch.manual_seed(2016)
+    np.random.seed(2016)
+    epochs = 25
     batch_size = 128
     monte_carlo_count = 16
     extractor = Vgg16Extractor(transform=False)
     corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
     evaluator = Evaluator.load(corpus).cuda()
-    generator = ConditionalGenerator.load(corpus).cuda()
+    generator = ConditionalGenerator.load(corpus, max_length).cuda()
 
     dataset = CocoDataset(corpus, tranform=utils.TransformImage(extractor.cnn), captions_per_image=captions_per_image)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=cpu_count())
@@ -62,7 +65,7 @@ if __name__ == '__main__':
             # generator
             generator.unfreeze()
             evaluator.freeze()
-            rewards, props = generator.reward_forward(images, evaluator, monte_carlo_count=monte_carlo_count)
+            rewards, props = generator.reward_forward(images, evaluator, monte_carlo_count=monte_carlo_count, steps=2)
             generator_optimizer.zero_grad()
             loss = generator_criterion(rewards, props)
             generator_loss += loss.item()
