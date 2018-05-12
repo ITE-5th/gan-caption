@@ -40,8 +40,8 @@ class Evaluator(nn.Module):
         torch.save({"state_dict": self.state_dict()}, FilePathManager.resolve("models/evaluator.pth"))
 
     @staticmethod
-    def load(corpus: Corpus):
-        state_dict = torch.load(FilePathManager.resolve("models/evaluator.pth"))
+    def load(corpus: Corpus, path="models/evaluator.pth"):
+        state_dict = torch.load(FilePathManager.resolve(path))
         state_dict = state_dict["state_dict"]
         evaluator = Evaluator(corpus)
         evaluator.load_state_dict(state_dict)

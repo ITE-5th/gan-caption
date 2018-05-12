@@ -33,6 +33,8 @@ class ECocoDataset(Dataset):
         s = list(s)
         for i in range(self.captions_per_image):
             other_index = random.choice(s)
+            if index == other_index:
+                print(f"index: {index}, other: {other_index}")
             other_caption = self.get_captions(other_index)
             other_index = random.choice(range(self.captions_per_image))
             other_caption = other_caption[other_index]

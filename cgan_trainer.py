@@ -29,12 +29,12 @@ if __name__ == '__main__':
     torch.manual_seed(2016)
     np.random.seed(2016)
     epochs = 25
-    batch_size = 128
+    batch_size = 2
     monte_carlo_count = 16
     extractor = Vgg16Extractor(transform=False)
     corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
-    evaluator = Evaluator.load(corpus).cuda()
-    generator = ConditionalGenerator.load(corpus, max_length).cuda()
+    evaluator = Evaluator.load(corpus, path="models/evaluator-4.pth").cuda()
+    generator = ConditionalGenerator.load(corpus, max_sentence_length=max_length, path="models/generator.pth").cuda()
 
     dataset = CocoDataset(corpus, tranform=utils.TransformImage(extractor.cnn), captions_per_image=captions_per_image)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=cpu_count())

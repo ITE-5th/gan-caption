@@ -10,7 +10,7 @@ extractor = Vgg16Extractor()
 load_img = utils.LoadImage()
 corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"))
 generator = ConditionalGenerator(corpus=corpus).cuda()
-state_dict = torch.load(FilePathManager.resolve('models/generator.pth'))
+state_dict = torch.load(FilePathManager.resolve('models/test-models/generator-0(1).pth'))
 generator.load_state_dict(state_dict['state_dict'])
 generator.eval()
 

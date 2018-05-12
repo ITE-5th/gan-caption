@@ -107,7 +107,7 @@ class ConditionalGenerator(nn.Module):
             result.append(self.embed.word_from_index(predicted.cpu().numpy()[0]))
 
         if return_sentence:
-            result = " ".join(result)#.split(self.embed.END_SYMBOL)[0]
+            result = " ".join(result)  # .split(self.embed.END_SYMBOL)[0]
 
         return result
 
@@ -178,7 +178,7 @@ class ConditionalGenerator(nn.Module):
             else:
                 words_feed = torch.stack([self.embed.word_embeddings_from_indices(words_indices)]).view(
                     beam_size, 1, -1).cuda()
-        return " ".join(outcaps)#.split(self.embed.END_SYMBOL)[0]
+        return " ".join(outcaps)  # .split(self.embed.END_SYMBOL)[0]
 
     def freeze(self):
         for param in self.parameters():
@@ -192,8 +192,8 @@ class ConditionalGenerator(nn.Module):
         torch.save({"state_dict": self.state_dict()}, FilePathManager.resolve("models/generator.pth"))
 
     @staticmethod
-    def load(corpus: Corpus, max_sentence_length=17):
-        state_dict = torch.load(FilePathManager.resolve("models/generator.pth"))
+    def load(corpus: Corpus, path: str = "models/generator.pth", max_sentence_length=17):
+        state_dict = torch.load(FilePathManager.resolve(path))
         state_dict = state_dict["state_dict"]
         generator = ConditionalGenerator(corpus, max_sentence_length=max_sentence_length)
         generator.load_state_dict(state_dict)
