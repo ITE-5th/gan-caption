@@ -93,8 +93,9 @@ class ConditionalGenerator(nn.Module):
         # embed the start symbol
         # inputs = self.embed.word_embeddings(["car"] * batch_size).unsqueeze(1).cuda()
         inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
+        result.append(self.embed.START_SYMBOL)
 
-        for i in range(self.max_sentence_length):
+        for i in range(self.max_sentence_length - 1):
             inputs = Variable(inputs)
             _, hidden = self.lstm(inputs, hidden)
             outputs = self.output_linear(hidden[0]).squeeze(0)

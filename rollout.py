@@ -38,7 +38,8 @@ class Rollout:
                     inputs = self.embed.word_embeddings_from_indices(predicted.view(-1).cpu().data.numpy()).unsqueeze(
                         1).cuda()
                     current_generated = torch.cat([current_generated, inputs], dim=1)
-                reward = evaluator(image_features.repeat(monte_carlo_count, 1), current_generated)
+                reward = evaluator(image_features.repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]),
+                                   current_generated)
                 reward = reward.view(batch_size, monte_carlo_count, -1).sum(1)
                 result += reward
                 result /= monte_carlo_count
