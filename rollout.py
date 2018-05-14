@@ -30,8 +30,8 @@ class Rollout:
                 inputs = generated[:, -1].unsqueeze(1)
                 current_generated = generated
                 for i in range(remaining):
-                    _, hidden = self.lstm(inputs, hidden)
-                    outputs = self.output_linear(hidden[0]).squeeze(0)
+                    temp, hidden = self.lstm(inputs, hidden)
+                    outputs = self.output_linear(temp[:, -1]).squeeze(0)
                     outputs = F.softmax(outputs, -1)
                     predicted = outputs.multinomial(1)
                     # embed the next inputs, unsqueeze is required cause of shape (batch_size, 1, embedding_size)

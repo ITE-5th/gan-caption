@@ -70,8 +70,8 @@ class ConditionalGenerator(nn.Module):
         current_generated = inputs
         self.rollout.update(self)
         for i in range(self.max_sentence_length):
-            _, hidden = self.lstm(inputs, hidden)
-            outputs = self.output_linear(hidden[0]).squeeze(0)
+            temp, hidden = self.lstm(inputs, hidden)
+            outputs = self.output_linear(temp[:, -1]).squeeze(0)
             outputs = F.softmax(outputs, -1)
             predicted = outputs.multinomial(1)
             prop = torch.gather(outputs, 1, predicted)
