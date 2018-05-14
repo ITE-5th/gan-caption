@@ -30,16 +30,15 @@ class Rollout:
                 inputs = generated[:, -1].unsqueeze(1)
                 current_generated = generated
                 for i in range(remaining):
-                    temp, hidden = self.lstm(inputs, hidden)
-                    outputs = self.output_linear(temp[:, -1]).squeeze(0)
+                    _, hidden = self.lstm(inputs, hidden)
+                    outputs = self.output_linear(hidden[0]).squeeze(0)
                     outputs = F.softmax(outputs, -1)
                     predicted = outputs.multinomial(1)
                     # embed the next inputs, unsqueeze is required cause of shape (batch_size, 1, embedding_size)
                     inputs = self.embed.word_embeddings_from_indices(predicted.view(-1).cpu().data.numpy()).unsqueeze(
                         1).cuda()
                     current_generated = torch.cat([current_generated, inputs], dim=1)
-                reward = evaluator(image_features.repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]),
-                                   current_generated)
+                reward = evaluator(image_features.repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]), current_generated)
                 reward = reward.view(batch_size, monte_carlo_count, -1).sum(1)
                 result += reward
                 result /= monte_carlo_count
