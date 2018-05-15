@@ -21,12 +21,15 @@ class Rollout:
 
         with torch.no_grad():
             batch_size = generated.size(0)
-            result = torch.zeros(batch_size, 1).cuda()
+            result = torch.zeros(batch_size).cuda()
             remaining = self.max_sentence_length - generated.shape[1]
             h, c = hidden
-            generated = generated.repeat(monte_carlo_count, 1, 1)
+            h, c = (h.unsqueeze(2).repeat(1, 1, monte_carlo_count, 1).view(h.shape[0], -1, h.shape[-1]),
+                    c.unsqueeze(2).repeat(1, 1, monte_carlo_count, 1).view(c.shape[0], -1, c.shape[-1]))
+            generated = generated.unsqueeze(1).repeat(1, monte_carlo_count, 1, 1).view(
+                generated.shape[0] * monte_carlo_count, generated.shape[1], -1)
             for _ in range(steps):
-                hidden = (h.repeat(1, monte_carlo_count, 1), c.repeat(1, monte_carlo_count, 1))
+                hidden = (h, c)
                 inputs = generated[:, -1].unsqueeze(1)
                 current_generated = generated
                 for i in range(remaining):
@@ -38,11 +41,47 @@ class Rollout:
                     inputs = self.embed.word_embeddings_from_indices(predicted.view(-1).cpu().data.numpy()).unsqueeze(
                         1).cuda()
                     current_generated = torch.cat([current_generated, inputs], dim=1)
-                reward = evaluator(image_features.repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]), current_generated)
-                reward = reward.view(batch_size, monte_carlo_count, -1).sum(1)
+                reward = evaluator(
+                    image_features.unsqueeze(1).repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]),
+                    current_generated)
+                # reward = reward.view(batch_size, monte_carlo_count, -1).sum(1)
+                # reward = reward[::monte_carlo_count].sum(1)
+                # reward = torch.stack([reward[i::batch_size].sum() for i in range(monte_carlo_count)])
+                # t = reward
+                # reward = torch.stack([reward[i::monte_carlo_count].sum() for i in range(batch_size)])
+                reward = reward.view(-1, batch_size).sum(0)
+                # reward = reward.view(batch_size, -1).sum(1)
                 result += reward
                 result /= monte_carlo_count
             return result
+
+    def reward2(self, generated, image_features, hidden, monte_carlo_count, evaluator, steps=1):
+        with torch.no_grad():
+            batch_size = generated.size(0)
+
+            result = torch.zeros(batch_size, 1).cuda()
+            remaining = self.max_sentence_length - generated.shape[1]
+            original_hidden = hidden
+
+            for j in range(monte_carlo_count):
+                current_generated = generated
+                hidden = original_hidden
+                inputs = generated[:, -1].view(batch_size, 1, -1)
+
+                for i in range(remaining):
+                    _, hidden = self.lstm(inputs, hidden)
+                    outputs = self.output_linear(hidden[0]).squeeze(0)
+                    outputs = F.softmax(outputs, -1)
+                    predicted = outputs.multinomial(1)
+                    # embed the next inputs, unsqueeze is required cause of shape (batch_size, 1, embedding_size)
+                    inputs = self.embed.word_embeddings_from_indices(
+                        predicted.view(-1).cpu().data.numpy()).unsqueeze(1).cuda()
+                    current_generated = torch.cat([current_generated, inputs], dim=1)
+                    reward = evaluator(image_features, current_generated)
+                    reward = reward.view(batch_size, -1)
+                    result += reward
+                result /= monte_carlo_count
+        return result
 
     def update(self, original_model):
         self.lstm = copy.deepcopy(original_model.lstm)
