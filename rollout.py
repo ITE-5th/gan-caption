@@ -43,13 +43,15 @@ class Rollout:
                     current_generated = torch.cat([current_generated, inputs], dim=1)
                 reward = evaluator(
                     image_features.unsqueeze(1).repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]),
+                    # image_features.repeat(monte_carlo_count, 1),
                     current_generated)
                 # reward = reward.view(batch_size, monte_carlo_count, -1).sum(1)
                 # reward = reward[::monte_carlo_count].sum(1)
                 # reward = torch.stack([reward[i::batch_size].sum() for i in range(monte_carlo_count)])
                 # t = reward
-                # reward = torch.stack([reward[i::monte_carlo_count].sum() for i in range(batch_size)])
-                reward = reward.view(-1, batch_size).sum(0)
+                # reward = torch.stack([reward[i::batch_size].sum() for i in range(batch_size)])
+                # reward = reward.view(-1, batch_size).sum(0)
+                reward = reward.view(monte_carlo_count, -1).sum(0)
                 # reward = reward.view(batch_size, -1).sum(1)
                 result += reward
                 result /= monte_carlo_count
