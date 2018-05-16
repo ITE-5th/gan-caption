@@ -94,9 +94,9 @@ if __name__ == '__main__':
             evaluator_optimizer.step()
 
         end = time.time()
-        print(f"Epoch: {epoch + 1}, Time: {end - start}, "
-              f"Loss: {generator_loss + evaluator_loss}, "
-              f"G: {generator_loss}, E:{evaluator_loss}")
+        print(f"Epoch: {(epoch + 1):1}, Time: {(end - start):1.0f}, "
+              f"Loss: {(generator_loss + evaluator_loss):6.4f}, "
+              f"G: {generator_loss:3.4f}, E:{evaluator_loss:3.4f}")
 
         start = end
 
