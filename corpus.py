@@ -155,3 +155,9 @@ class Corpus:
         for i in range(indices.shape[0]):
             words.append(self.word_from_index(indices[i]))
         return words
+
+    def ppppp(self, sentence: str):
+        sentence = f"{self.START_SYMBOL} {sentence} {self.END_SYMBOL}"
+        tokens = self.tokenize(sentence)
+        tokens = self.pad_sentence(tokens)
+        return tokens

@@ -41,7 +41,6 @@ class ECocoDataset(Dataset):
             # print(f"other: {other_caption}")
             other_caption = self.corpus.embed_sentence(other_caption, one_hot=False)
             others.append(other_caption)
-
         others = torch.stack(others)
         return image, captions, others
 

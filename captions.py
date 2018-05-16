@@ -18,7 +18,8 @@ class Captions:
             anns = self.dataset.captions.coco.loadAnns(self.dataset.captions.coco.getAnnIds(imgIds=ids[indices[i]]))
             target = np.asarray([ann['caption'] for ann in anns])
 
-            gt = torch.stack([self.corpus.embed_sentence(target[i], one_hot=False) for i in range(self.captions_per_image)])
+            gt = torch.stack(
+                [self.corpus.embed_sentence(target[i], one_hot=False) for i in range(self.captions_per_image)])
             result.append(gt)
 
         return torch.stack(result)
@@ -43,8 +44,12 @@ class Captions:
 
         return torch.stack(others)
 
-    def get_captions(self, indices):
+    def get_captions(self, indices, other: bool = True):
         indices = indices.cpu().numpy()
         gt = self.get_gt(indices)
-        others = self.get_others(indices)
-        return gt.view(-1, gt.shape[-2], gt.shape[-1]), others
+        gt = gt.view(-1, gt.shape[-2], gt.shape[-1])
+        if other:
+            others = self.get_others(indices)
+            return gt, others
+
+        return gt

@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 from corpus import Corpus
 from file_path_manager import FilePathManager
 
+
 class CocoDataset(Dataset):
 
     def __init__(self, corpus: Corpus, evaluator: bool = True, tranform=None, captions_per_image=2):
@@ -18,7 +19,7 @@ class CocoDataset(Dataset):
                                           transform=tranform)
 
         self.captions_per_image = captions_per_image
-        self.length = len(self.captions)
+        self.length = 2  # len(self.captions)
 
     def __getitem__(self, index):
         image, caption = self.captions[index]

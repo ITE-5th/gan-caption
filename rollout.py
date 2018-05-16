@@ -4,18 +4,26 @@ import copy
 
 import torch
 import torch.nn.functional as F
+from torch.distributions import Categorical
 
 
 class Rollout:
     """Roll-out policy"""
 
-    def __init__(self, max_sentence_length, corpus):
+    def __init__(self, max_sentence_length, corpus, parent):
         self.embed = corpus
         self.lstm = None
         self.max_sentence_length = max_sentence_length
         self.output_linear = None
+        # self.lstm = torch.nn.LSTM(input_size=corpus.embed_size,
+        #                           hidden_size=parent.input_encoding_size,
+        #                           num_layers=parent.num_layers,
+        #                           batch_first=True,
+        #                           dropout=float(parent.dropout))
+        #
+        # self.output_linear = torch.nn.Linear(parent.input_encoding_size, corpus.vocab_size)
 
-    def reward(self, generated, image_features, hidden, monte_carlo_count, evaluator, steps=1):
+    def reward2(self, generated, image_features, hidden, monte_carlo_count, evaluator, steps=1):
         assert monte_carlo_count % steps == 0, "Monte Carlo Count can't be divided by Steps"
         monte_carlo_count //= steps
 
@@ -28,6 +36,8 @@ class Rollout:
                     c.unsqueeze(2).repeat(1, 1, monte_carlo_count, 1).view(c.shape[0], -1, c.shape[-1]))
             generated = generated.unsqueeze(1).repeat(1, monte_carlo_count, 1, 1).view(
                 generated.shape[0] * monte_carlo_count, generated.shape[1], -1)
+            image_features = image_features.unsqueeze(1).repeat(1, monte_carlo_count, 1).view(-1,
+                                                                                              image_features.shape[-1])
             for _ in range(steps):
                 hidden = (h, c)
                 inputs = generated[:, -1].unsqueeze(1)
@@ -37,14 +47,15 @@ class Rollout:
                     outputs = self.output_linear(hidden[0]).squeeze(0)
                     outputs = F.softmax(outputs, -1)
                     predicted = outputs.multinomial(1)
+                    # m = Categorical(outputs)
+                    # predicted = m.sample()
                     # embed the next inputs, unsqueeze is required cause of shape (batch_size, 1, embedding_size)
                     inputs = self.embed.word_embeddings_from_indices(predicted.view(-1).cpu().data.numpy()).unsqueeze(
                         1).cuda()
                     current_generated = torch.cat([current_generated, inputs], dim=1)
-                reward = evaluator(
-                    image_features.unsqueeze(1).repeat(1, monte_carlo_count, 1).view(-1, image_features.shape[-1]),
-                    # image_features.repeat(monte_carlo_count, 1),
-                    current_generated)
+                reward = evaluator(image_features,
+                                   # image_features.repeat(monte_carlo_count, 1),
+                                   current_generated)
                 # reward = reward.view(batch_size, monte_carlo_count, -1).sum(1)
                 # reward = reward[::monte_carlo_count].sum(1)
                 # reward = torch.stack([reward[i::batch_size].sum() for i in range(monte_carlo_count)])
@@ -57,7 +68,7 @@ class Rollout:
                 result /= monte_carlo_count
             return result
 
-    def reward2(self, generated, image_features, hidden, monte_carlo_count, evaluator, steps=1):
+    def reward(self, generated, image_features, hidden, monte_carlo_count, evaluator, steps=1):
         with torch.no_grad():
             batch_size = generated.size(0)
 
@@ -79,10 +90,17 @@ class Rollout:
                     inputs = self.embed.word_embeddings_from_indices(
                         predicted.view(-1).cpu().data.numpy()).unsqueeze(1).cuda()
                     current_generated = torch.cat([current_generated, inputs], dim=1)
-                    reward = evaluator(image_features, current_generated)
-                    reward = reward.view(batch_size, -1)
-                    result += reward
-                result /= monte_carlo_count
+
+                    if self.embed.word_from_index(predicted[0, 0].item()) == self.embed.END_SYMBOL:
+                        if self.max_sentence_length - current_generated.shape[1] > 0:
+                            pad = torch.stack([self.embed.word_embedding(self.embed.PAD)] * (self.max_sentence_length - current_generated.shape[1])).cuda()
+                            current_generated = torch.cat([current_generated, pad.unsqueeze(0)], dim=1)
+                        break
+
+                reward = evaluator(image_features, current_generated)
+                reward = reward.view(batch_size, -1)
+                result += reward
+            result /= monte_carlo_count
         return result
 
     def update(self, original_model):
