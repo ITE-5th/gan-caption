@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torch.distributions import Normal, Categorical
+from torch.distributions import Normal
 
 from beam_search import BeamSearch
 from corpus import Corpus
@@ -28,6 +28,7 @@ class ConditionalGenerator(nn.Module):
         self.embed = corpus
         self.dropout = dropout
         self.num_layers = num_layers
+        self.hidden_size = mean.shape[0]
         self.dist = Normal(Variable(mean), Variable(std))  # noise variable
         self.lstm = nn.LSTM(input_size=corpus.embed_size,
                             hidden_size=self.input_encoding_size,
@@ -46,6 +47,7 @@ class ConditionalGenerator(nn.Module):
 
         # generate rand
         rand = self.dist.sample((image_features.shape[0],)).cuda()
+        # rand = torch.zeros(image_features.shape[0], 1024).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)
         hidden = self.features_linear(torch.cat((image_features, rand), 1).unsqueeze(0))
@@ -61,10 +63,27 @@ class ConditionalGenerator(nn.Module):
         outputs = self.output_linear(hiddens[0])
         return outputs
 
+    def init_hidden_noise(self, image_features):
+        z = torch.zeros(image_features.shape[0], self.hidden_size).cuda()
+
+        # hidden of shape (num_layers * num_directions, batch, hidden_size)
+        hidden = self.features_linear(torch.cat((image_features, z), 1).unsqueeze(0))
+
+        # cell of shape (num_layers * num_directions, batch, hidden_size)
+        cell = Variable(torch.zeros(image_features.shape[0], self.input_encoding_size).unsqueeze(0))
+
+        return hidden.cuda(), cell.cuda()
+
+    def forward_noise(self, features, captions):
+        states = self.init_hidden_noise(features)
+        hiddens, _ = self.lstm(captions, states)
+        outputs = self.output_linear(hiddens[0])
+        return outputs
+
     def reward_forward(self, image_features, evaluator, monte_carlo_count=16, steps=1):
         # self.lstm.flatten_parameters()
         batch_size = image_features.size(0)
-        hidden = self.init_hidden(image_features)
+        hidden = self.init_hidden_noise(image_features)
         # embed the start symbol
         inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
         rewards = torch.zeros(batch_size, self.max_sentence_length)
@@ -86,7 +105,8 @@ class ConditionalGenerator(nn.Module):
             # embed the next inputs, unsqueeze is required cause of shape (batch_size, 1, embedding_size)
             inputs = self.embed.word_embeddings_from_indices(predicted.view(-1).cpu().data.numpy()).unsqueeze(1).cuda()
             current_generated = torch.cat([current_generated, inputs], dim=1)
-            reward = self.rollout.reward2(current_generated, image_features, hidden, monte_carlo_count, evaluator, steps)
+            reward = self.rollout.reward2(current_generated, image_features, hidden, monte_carlo_count, evaluator,
+                                          steps)
             rewards[:, i] = reward.view(-1)
         return rewards, props
 
@@ -95,7 +115,7 @@ class ConditionalGenerator(nn.Module):
 
         # init the result with zeros and lstm states
         result = []
-        hidden = self.init_hidden(image_features)
+        hidden = self.init_hidden_noise(image_features)
 
         # embed the start symbol
         # inputs = self.embed.word_embeddings(["car"] * batch_size).unsqueeze(1).cuda()
@@ -124,7 +144,7 @@ class ConditionalGenerator(nn.Module):
 
         # init the result with zeros, and lstm states
         result = torch.zeros(self.max_sentence_length, self.embed.embed_size)
-        hidden = self.init_hidden(image_features)
+        hidden = self.init_hidden_noise(image_features)
 
         inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
 
@@ -144,7 +164,7 @@ class ConditionalGenerator(nn.Module):
 
         # init the result with zeros and lstm states
         result = torch.zeros(batch_size, self.max_sentence_length, self.embed.embed_size).cuda()
-        hidden = self.init_hidden(images_features)
+        hidden = self.init_hidden_noise(images_features)
 
         # embed the start symbol
         inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
@@ -167,7 +187,7 @@ class ConditionalGenerator(nn.Module):
         beam_searcher = BeamSearch(beam_size, batch_size, 17)
 
         # init the result with zeros and lstm states
-        states = self.init_hidden(image_features)
+        states = self.init_hidden_noise(image_features)
         states = (states[0].repeat(1, beam_size, 1).cuda(), states[1].repeat(1, beam_size, 1).cuda())
 
         # embed the start symbol
@@ -196,7 +216,7 @@ class ConditionalGenerator(nn.Module):
             param.requires_grad = True
 
     def save(self):
-        torch.save({"state_dict": self.state_dict()}, FilePathManager.resolve("models/generator.pth"))
+        torch.save({"state_dict": self.state_dict()}, FilePathManager.resolve("models/generator00001111.pth"))
 
     @staticmethod
     def load(corpus: Corpus, path: str = "models/generator.pth", max_sentence_length=17):

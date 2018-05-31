@@ -23,13 +23,13 @@ if __name__ == '__main__':
     g_lr = 4e-4
     alpha = 1
     beta = 1
-    captions_per_image = 3
+    captions_per_image = 1
     max_length = 17
 
     torch.manual_seed(2016)
     np.random.seed(2016)
-    epochs = 50
-    batch_size = 31
+    epochs = 20
+    batch_size = 32
     monte_carlo_count = 16
     extractor = Vgg16Extractor(transform=False)
     corpus = Corpus.load(FilePathManager.resolve("data/corpus-old.pkl"), max_length)
@@ -54,9 +54,23 @@ if __name__ == '__main__':
         # generator
         generator.unfreeze()
         evaluator.freeze()
+        generator.train(True)
 
         generator_loss = 0
-        for i, (images, indices) in enumerate(dataloader, 0):
+
+        # d = iter(dataloader)
+        # while True:
+        #     images = next(d, None)
+        #     images2 = next(d, None)
+        #     if images is None:
+        #         break
+        #
+        #     images = images[0]
+        #     if images2 is not None:
+        #         images2 = images2[0]
+        #         images = torch.cat([images, images2], dim=0)
+
+        for images, _ in dataloader:
             images = images.cuda()
             images = extractor.forward(Variable(images))
 
@@ -70,7 +84,7 @@ if __name__ == '__main__':
         # evaluator
         evaluator.unfreeze()
         generator.freeze()
-
+        evaluator.train(True)
         evaluator_loss = 0
         for i, (images, indices) in enumerate(dataloader, 0):
             captions, other_captions = captions_loader.get_captions(indices)

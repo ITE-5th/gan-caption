@@ -42,12 +42,13 @@ models = [
     # "./models/evaluator-3.pth",
     "./models/evaluator-4.pth",
     # "./models/evaluator-7.pth",
-    "./models/evaluator1.pth",
-    "./models/evaluator2.pth",
-    "./models/evaluator3.pth",
+    # "./models/evaluator1.pth",
+    # "./models/evaluator2.pth",
+    # "./models/evaluator3.pth",
     "./models/evaluator4.pth",
     # "./models/evaluator-c99.pth",
-    "./models/evaluator.pth",
+    # "./models/evaluator.pth",
+    "./models/Evaluator.pth",
 ]
 batch_size = 1
 
