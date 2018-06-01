@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torch.distributions import Normal
+from torch.distributions import Uniform
 
 from beam_search import BeamSearch
 from corpus import Corpus
@@ -14,8 +14,11 @@ class ConditionalGenerator(nn.Module):
 
     def __init__(self,
                  corpus: Corpus,
-                 mean: torch.FloatTensor = torch.zeros(1024),
-                 std: torch.FloatTensor = torch.ones(1024),
+                 # mean: torch.FloatTensor = torch.zeros(1024),
+                 # std: torch.FloatTensor = torch.ones(1024),
+                 low: float = -1,
+                 high: float = +1,
+                 hidden_size: int = 100,
                  cnn_output_size: int = 4096,
                  input_encoding_size: int = 512,
                  max_sentence_length: int = 18,
@@ -28,8 +31,9 @@ class ConditionalGenerator(nn.Module):
         self.embed = corpus
         self.dropout = dropout
         self.num_layers = num_layers
-        self.hidden_size = mean.shape[0]
-        self.dist = Normal(Variable(mean), Variable(std))  # noise variable
+        self.hidden_size = hidden_size  # mean.shape[0]
+        # self.dist = Normal(Variable(mean), Variable(std))  # noise variable
+        self.dist = Uniform(low, high)  # noise variable
         self.lstm = nn.LSTM(input_size=corpus.embed_size,
                             hidden_size=self.input_encoding_size,
                             num_layers=self.num_layers,
@@ -38,7 +42,8 @@ class ConditionalGenerator(nn.Module):
 
         self.output_linear = nn.Linear(self.input_encoding_size, corpus.vocab_size)
         self.features_linear = nn.Sequential(
-            nn.Linear(cnn_output_size + len(mean), input_encoding_size),
+            # nn.Linear(cnn_output_size + len(mean), input_encoding_size),
+            nn.Linear(cnn_output_size + self.hidden_size, input_encoding_size),
             nn.ReLU()
         )
         self.rollout = Rollout(max_sentence_length, corpus, self)
@@ -46,7 +51,7 @@ class ConditionalGenerator(nn.Module):
     def init_hidden(self, image_features):
 
         # generate rand
-        rand = self.dist.sample((image_features.shape[0],)).cuda()
+        rand = self.dist.sample((image_features.shape[0], self.hidden_size)).cuda()
         # rand = torch.zeros(image_features.shape[0], 1024).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)

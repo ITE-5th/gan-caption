@@ -24,7 +24,7 @@ corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
 print("Corpus loaded")
 
 captions_per_image = 1
-batch_size = 2
+batch_size = 1
 dataset = GCocoDataset(corpus, transform=tf_img, captions_per_image=captions_per_image)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -39,6 +39,7 @@ start = time.time()
 print("Begin Training")
 for epoch in range(epochs):
     epoch_loss = 0
+    it.reset()
     for i, (images, inputs, targets) in enumerate(it):
         images = Variable(images).cuda()
         images = extractor.forward(images)

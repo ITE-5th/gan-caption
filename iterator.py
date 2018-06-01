@@ -5,6 +5,7 @@ class Iterator:
     """
     Useless Iterator, DON'T USE IT
     """
+
     def __init__(self, dataloader, count):
         super().__init__()
 
@@ -15,11 +16,13 @@ class Iterator:
     def __iter__(self):
         return self
 
+    def reset(self):
+        self.iter = iter(self.dataloader)
+
     def __next__(self):
         batch = next(self.iter, None)
         # End of the epoch
         if batch is None:
-            self.iter = iter(self.dataloader)
             raise StopIteration
             # return None, None, None
 
