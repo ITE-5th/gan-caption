@@ -51,11 +51,10 @@ class ConditionalGenerator(nn.Module):
     def init_hidden(self, image_features):
 
         # generate rand
-        rand = self.dist.sample((image_features.shape[0], self.hidden_size)).cuda()
-        # rand = torch.zeros(image_features.shape[0], 1024).cuda()
+        z = torch.zeros(image_features.shape[0], self.hidden_size).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)
-        hidden = self.features_linear(torch.cat((image_features, rand), 1).unsqueeze(0))
+        hidden = self.features_linear(torch.cat((image_features, z), 1).unsqueeze(0))
 
         # cell of shape (num_layers * num_directions, batch, hidden_size)
         cell = Variable(torch.zeros(image_features.shape[0], self.input_encoding_size).unsqueeze(0))
@@ -69,7 +68,8 @@ class ConditionalGenerator(nn.Module):
         return outputs
 
     def init_hidden_noise(self, image_features):
-        z = torch.zeros(image_features.shape[0], self.hidden_size).cuda()
+        # z = torch.zeros(image_features.shape[0], self.hidden_size).cuda()
+        z = self.dist.sample((image_features.shape[0], self.hidden_size)).cuda()
 
         # hidden of shape (num_layers * num_directions, batch, hidden_size)
         hidden = self.features_linear(torch.cat((image_features, z), 1).unsqueeze(0))

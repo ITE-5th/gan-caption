@@ -24,9 +24,11 @@ class GCocoDataset(Dataset):
 
     def __getitem__(self, index):
         image, caption = self.captions[index]
-        inputs = torch.stack(
-            [self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(self.captions_per_image)])
-        targets = torch.stack([self.corpus.sentence_indices(caption[i]) for i in range(self.captions_per_image)])
+        inputs = self.corpus.embed_sentence(caption[0], one_hot=False)
+        targets = self.corpus.sentence_indices(caption[0])
+        # inputs = torch.stack(
+        #     [self.corpus.embed_sentence(caption[i], one_hot=False) for i in range(self.captions_per_image)])
+        # targets = torch.stack([self.corpus.sentence_indices(caption[i]) for i in range(self.captions_per_image)])
         return image, inputs, targets
 
     def __len__(self):

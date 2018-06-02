@@ -24,11 +24,10 @@ class Iterator:
         # End of the epoch
         if batch is None:
             raise StopIteration
-            # return None, None, None
 
         images, inputs, targets = batch[0], batch[1], batch[2]
         #
-        for i in range(self.count):
+        for i in range(1, self.count):
             result = next(self.iter, None)
             if result is None:
                 break
