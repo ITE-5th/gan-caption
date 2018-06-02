@@ -24,15 +24,15 @@ corpus = Corpus.load(FilePathManager.resolve("data/corpus.pkl"), max_length)
 print("Corpus loaded")
 
 captions_per_image = 1
-batch_size = 1
+batch_size = 2
 dataset = GCocoDataset(corpus, transform=tf_img, captions_per_image=captions_per_image)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-generator = ConditionalGenerator(corpus).cuda()
+generator = ConditionalGenerator(corpus, hidden_size=1024, max_sentence_length=max_length).cuda()
+generator.train(True)
 criterion = torch.nn.CrossEntropyLoss().cuda()
 optimizer = Adam(generator.parameters(), lr=4e-4, betas=(0.8, 0.999), weight_decay=1e-5)
-generator.train(True)
-it = Iterator(dataloader, 2)
+it = Iterator(dataloader, 10)
 epochs = 100
 print(f"number of batches = {len(dataset) // batch_size}")
 start = time.time()
@@ -40,9 +40,9 @@ print("Begin Training")
 for epoch in range(epochs):
     epoch_loss = 0
     it.reset()
+    # for i, (images, inputs, targets) in enumerate(dataloader):
     for i, (images, inputs, targets) in enumerate(it):
-        images = Variable(images).cuda()
-        images = extractor.forward(images)
+        images = extractor.forward(images.cuda())
 
         k = images.shape[0]
         inputs = inputs.view(-1, max_length, inputs.shape[-1])
@@ -50,6 +50,7 @@ for epoch in range(epochs):
 
         inputs = pack_padded_sequence(inputs[:, :-1], [max_length] * k, True).cuda()
         targets = pack_padded_sequence(targets[:, 1:], [max_length] * k, True).cuda()[0]
+        # targets = targets[:, 1:].cuda()
 
         optimizer.zero_grad()
         outputs = generator.forward(images, inputs)

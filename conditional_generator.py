@@ -57,7 +57,7 @@ class ConditionalGenerator(nn.Module):
         hidden = self.features_linear(torch.cat((image_features, z), 1).unsqueeze(0))
 
         # cell of shape (num_layers * num_directions, batch, hidden_size)
-        cell = Variable(torch.zeros(image_features.shape[0], self.input_encoding_size).unsqueeze(0))
+        cell = torch.zeros(1, image_features.shape[0], self.input_encoding_size)
 
         return hidden.cuda(), cell.cuda()
 

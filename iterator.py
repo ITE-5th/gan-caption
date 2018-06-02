@@ -1,3 +1,5 @@
+from math import ceil
+
 import torch
 
 
@@ -28,13 +30,16 @@ class Iterator:
         images, inputs, targets = batch[0], batch[1], batch[2]
         #
         for i in range(1, self.count):
-            result = next(self.iter, None)
-            if result is None:
+            batch2 = next(self.iter, None)
+            if batch2 is None:
                 break
-            images2, inputs2, targets2 = batch[0], batch[1], batch[2]
+            images2, inputs2, targets2 = batch2[0], batch2[1], batch2[2]
 
             images = torch.cat([images, images2], dim=0)
             inputs = torch.cat([inputs, inputs2], dim=0)
             targets = torch.cat([targets, targets2], dim=0)
 
         return images, inputs, targets
+
+    def __len__(self):
+        return ceil(len(self.dataloader) / self.count)
