@@ -12,7 +12,8 @@ class Captions:
         self.captions_per_image = captions_per_image
 
     def get_gt(self, indices):
-        result = []
+        gts = []
+        targets = []
         ids = np.asarray(self.dataset.captions.ids)
         for i in range(indices.shape[0]):
             anns = self.dataset.captions.coco.loadAnns(self.dataset.captions.coco.getAnnIds(imgIds=ids[indices[i]]))
@@ -20,9 +21,14 @@ class Captions:
 
             gt = torch.stack(
                 [self.corpus.embed_sentence(target[i], one_hot=False) for i in range(self.captions_per_image)])
-            result.append(gt)
 
-        return torch.stack(result)
+            t = torch.stack(
+                [self.corpus.sentence_indices(target[i]) for i in range(self.captions_per_image)])
+
+            gts.append(gt)
+            targets.append(t)
+
+        return torch.stack(gts), torch.stack(targets)
 
     def get_caption(self, index, caption_index):
         img_id = self.dataset.captions.ids[index]
@@ -46,10 +52,11 @@ class Captions:
 
     def get_captions(self, indices, other: bool = True):
         indices = indices.cpu().numpy()
-        gt = self.get_gt(indices)
-        gt = gt.view(-1, gt.shape[-2], gt.shape[-1])
+        embedding, target = self.get_gt(indices)
+        embedding = embedding.view(-1, embedding.shape[-2], embedding.shape[-1])
+        target = target.view(-1, target.shape[-1])
         if other:
             others = self.get_others(indices)
-            return gt, others
+            return embedding, target, others
 
-        return gt
+        return embedding, target
