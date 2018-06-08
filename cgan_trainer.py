@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     torch.manual_seed(2016)
     np.random.seed(2016)
-    epochs = 20
+    epochs = 100
     batch_size = 32
     monte_carlo_count = 16
     extractor = Vgg16Extractor(transform=False)

@@ -91,11 +91,15 @@ class ConditionalGenerator(nn.Module):
         hidden = self.init_hidden_noise(image_features)
         # embed the start symbol
         inputs = self.embed.word_embeddings([self.embed.START_SYMBOL] * batch_size).unsqueeze(1).cuda()
-        rewards = torch.zeros(batch_size, self.max_sentence_length)
-        props = torch.zeros(batch_size, self.max_sentence_length)
+        rewards = torch.zeros(batch_size, self.max_sentence_length - 1)
+        # rewards[:, 0] = torch.ones(batch_size)
+
+        props = torch.zeros(batch_size, self.max_sentence_length - 1)
+        # props[:, 0] = torch.ones(batch_size)
+
         current_generated = inputs
         self.rollout.update(self)
-        for i in range(1, self.max_sentence_length):
+        for i in range(self.max_sentence_length - 1):
             _, hidden = self.lstm(inputs, hidden)
             outputs = self.output_linear(hidden[0]).squeeze(0)
             outputs = F.softmax(outputs, -1)

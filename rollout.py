@@ -62,6 +62,7 @@ class Rollout:
                 # t = reward
                 # reward = torch.stack([reward[i::batch_size].sum() for i in range(batch_size)])
                 # reward = reward.view(-1, batch_size).sum(0)
+                # reward = reward.view(monte_carlo_count, -1).sum(0)
                 reward = reward.view(-1, monte_carlo_count).sum(1)
                 # reward = reward.view(batch_size, -1).sum(1)
                 result += reward
