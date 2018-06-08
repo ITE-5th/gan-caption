@@ -95,7 +95,7 @@ class ConditionalGenerator(nn.Module):
         props = torch.zeros(batch_size, self.max_sentence_length)
         current_generated = inputs
         self.rollout.update(self)
-        for i in range(self.max_sentence_length):
+        for i in range(1, self.max_sentence_length):
             _, hidden = self.lstm(inputs, hidden)
             outputs = self.output_linear(hidden[0]).squeeze(0)
             outputs = F.softmax(outputs, -1)

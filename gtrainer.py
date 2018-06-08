@@ -33,7 +33,7 @@ generator.train(True)
 criterion = torch.nn.CrossEntropyLoss().cuda()
 optimizer = Adam(generator.parameters(), lr=4e-4, betas=(0.8, 0.999), weight_decay=1e-5)
 it = Iterator(dataloader, 10)
-epochs = 100
+epochs = 1
 print(f"number of batches = {len(dataset) // batch_size}")
 start = time.time()
 print("Begin Training")

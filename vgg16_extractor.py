@@ -1,4 +1,5 @@
 import pretrainedmodels
+import torch
 from pretrainedmodels import utils
 
 from file_path_manager import FilePathManager
@@ -39,8 +40,22 @@ class Vgg16Extractor:
 
 
 if __name__ == '__main__':
+    def extract(path: str):
+        image = load_img(path)
+        image = extractor.forward(image)
+        new_location = path.split(".")[0] + ".pth"
+        torch.save(image, new_location)
+
+
     extractor = Vgg16Extractor()
     load_img = utils.LoadImage()
-    image_path = FilePathManager.resolve("test_images/image_1.png")
+    image_path = [
+        FilePathManager.resolve("test_images/image_1.jpg"),
+        FilePathManager.resolve("test_images/image_2.jpg"),
+        FilePathManager.resolve("test_images/image_3.jpg"),
+        FilePathManager.resolve("test_images/image_4.jpg"),
+        FilePathManager.resolve("test_images/image_6.jpg"),
+    ]
 
-    print(extractor.forward(load_img(image_path)))
+    for path in image_path:
+        extract(path)
